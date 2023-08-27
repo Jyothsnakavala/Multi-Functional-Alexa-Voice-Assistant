@@ -4,6 +4,8 @@ import pywhatkit
 import datetime
 import wikipedia
 import pyjokes
+import pyowm
+owm = pyowm.OWM('api key')
 
 listener = sr.Recognizer()
 engine = pyttsx3.init()
@@ -15,7 +17,12 @@ def talk(text):
     engine.say(text)
     engine.runAndWait()
 
-
+def get_city_and_country():
+    talk("Sure, please tell me the name of the city.")
+    city = take_command().capitalize()
+    talk("Great! Now, could you tell me the two-letter country code for that city?")
+    country_code = take_command().upper()
+    return city, country_code
 def take_command():
     try:
         with sr.Microphone() as source:
@@ -51,9 +58,21 @@ def run_alexa():
         talk('I am in a relationship with wifi')
     elif 'joke' in command:
         talk(pyjokes.get_joke())
+    elif 'weather' in command:
+        city, country_code = get_city_and_country()
+        try:
+            observation = owm.weather_manager().weather_at_place(f'{city},{country_code}')
+            weather = observation.weather
+            temperature = weather.temperature('celsius')['temp']
+            status = weather.status
+            talk(
+                f"The weather in {city}, {country_code} is {status} with a temperature of {temperature} degrees Celsius.")
+        except pyowm.commons.exceptions.UnauthorizedError:
+            talk("Error: Invalid API Key provided or insufficient permissions.")
     else:
         talk('Please say the command again.')
 
 
 while True:
     run_alexa()
+  
